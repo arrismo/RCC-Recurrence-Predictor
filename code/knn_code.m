@@ -1,10 +1,8 @@
+% K  Nearest Neighbor Model 
+
 clear all
 filename = 'psa_data_noinvasion.xlsx';
 data = readtable(filename);
-% load class1
-% load class2
-% data1 = data(class1,:);
-% data2 = data(class2,:);
 
 data1 = data(1:321,:);
 data2 = data(322:642,:);
@@ -61,24 +59,16 @@ TargetTrain = Target(idxTrain);
 FeatureTest = Feature(idxTest);
 TargetTest = Target(idxTest);
 
- % Then the following lines define the SVM model based on training data and calculate the training and test results.
-   Mdl = fitcsvm(Feature, Target, 'Standardize', true, 'KernelFunction', 'RBF', 'KernelScale', 'auto', 'OutlierFraction', 0.05);
-   
-   cv = crossval(Mdl, 'KFold',5);
-   % now we can see the cross validation loss over 5 folds 
-fprintf('Average cross-validation loss: %.2f\n', loss);
+k = 5;
+ kMdl = fitcknn(FeatureTrain,TargetTrain, 'NumNeighbors',k, 'Distance', 'Euclidean');
+ [TrainKNN, score] = predict(kMdl, FeatureTrain);
+ [TestKNN, score] = predict(kMdl, FeatureTest);
 
-
-         % Extract predicted label for train data
-         [TrainSVM, score] = predict(Mdl, FeatureTrain);
-         % Extract predicted label for test data
-         [TestSVM, score] = predict(Mdl, FeatureTest);
 
 
 % create confusion matrix
-cm = confusionchart(TargetTrain,TrainSVM)
-     
-
+cm = confusionchart(TargetTrain,TrainSVM);
+ 
 
 
  II1=find(TargetTest==0);
@@ -91,19 +81,8 @@ cm = confusionchart(TargetTrain,TrainSVM)
  % Evaluate the performance
 
 
-        PSVM=100-norm(TestSVM-TargetTest).^2/length(TargetTest)*100; % Accuracy
-        PtrSVM=100-norm(TrainSVM-TargetTrain).^2/length(TargetTrain)*100; % Accuracy of the training phase
+        PSVM=100-norm(TestKNN-TargetTest).^2/length(TargetTest)*100; % Accuracy
+        PtrSVM=100-norm(TrainKNN-TargetTrain).^2/length(TargetTrain)*100; % Accuracy of the training phase
         % 
         % F1SVM= 2*PtrSVM*SSVM/(t+); % F1 score
         % F1trSVM= 2*PrtrSVM*StrSVM/(PrtrSVM+StrSVM); % F1 score of the training phase
-
- % Confusion Matrix
-        FPSVM=length(find(TestSVM(II2)==0)); % find false positives
-        TPSVM=length(find(TestSVM(II1)==0)); % find true positives 
-        TNSVM=length(find(TestSVM(II2)==1)); % find true negatives
-        FNSVM=length(find(TestSVM(II1)==1));  % find false negatives
-
-        SSVM=length(find(TestSVM(II1)==0))/length(II1)*100; % Sensitivity
-        PrSVM=length(find(TestSVM(II1)==0))/(FPSVM+TPSVM)*100; % Precision
-        SPSVM=length(find(TestSVM(II2)==1))/length(II2)*100; %Specifisity
-        FPRSVM=length(find(TestSVM(II2)==1))/length(II2)*100; % False positive rate
